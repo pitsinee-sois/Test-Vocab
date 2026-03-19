@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer Vocab Master</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f4f7f9;
+        }
+        body {
+            font-family: 'ChulaCharas', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .header { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        .page { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Menu Styles */
+        .menu-grid { display: grid; gap: 15px; margin-top: 30px; }
+        .menu-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+        .menu-card:hover { border-color: var(--secondary); transform: scale(1.02); }
+        .menu-card i { font-size: 24px; display: block; margin-bottom: 10px; }
+
+        /* Card Styles */
+        .card-container { perspective: 1000px; height: 300px; margin-bottom: 20px; cursor: pointer; }
+        .card { 
+            position: relative; width: 100%; height: 100%; 
+            transition: transform 0.6s; transform-style: preserve-3d; 
+            border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .card.flipped { transform: rotateY(180deg); }
+        .card-face {
+            position: absolute; width: 100%; height: 100%; 
+            backface-visibility: hidden; display: flex; 
+            flex-direction: column; justify-content: center; 
+            align-items: center; padding: 20px; border-radius: 20px;
+            background: white; box-sizing: border-box;
+        }
+        .card-back { background: var(--secondary); color: white; transform: rotateY(180deg); }
+
+        /* Quiz Styles */
+        .quiz-box { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .question { font-size: 24px; font-weight: bold; margin-bottom: 20px; text-align: center; color: var(--secondary); }
+        .options-grid { display: grid; gap: 10px; }
+        .option-btn {
+            padding: 15px; border: 2px solid #eee; border-radius: 12px;
+            background: white; cursor: pointer; text-align: left; font-size: 16px;
+        }
+        .option-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+        .option-btn.wrong { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Input Style */
+        input[type="text"] {
+            width: 100%; padding: 15px; border-radius: 10px; border: 2px solid #ddd;
+            font-size: 18px; margin-bottom: 15px; box-sizing: border-box; text-align: center;
+        }
+        .feedback { margin-top: 15px; font-weight: bold; text-align: center; min-height: 24px; }
+
+        .btn-nav {
+            padding: 12px 20px; border: none; border-radius: 10px;
+            background: var(--primary); color: white; cursor: pointer; margin-top: 10px;
+        }
+        .home-link { color: var(--secondary); cursor: pointer; text-decoration: underline; display: block; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>Engineering Vocab</h1>
+        <p id="stats-summary">468 Words Available</p>
+    </div>
+
+    <div id="page-home" class="page active">
+        <div class="menu-grid">
+            <div class="menu-card" onclick="showPage('flash')">🗂️ Flashcards (การ์ดคำศัพท์)</div>
+            <div class="menu-card" onclick="startQuiz('choice')">📝 Multiple Choice (ควิซ 4 ตัวเลือก)</div>
+            <div class="menu-card" onclick="startQuiz('fill')">✏️ Fill in Blank (เติมความหมายเอง)</div>
+        </div>
+    </div>
+
+    <div id="page-flash" class="page">
+        <div class="card-container" onclick="this.querySelector('.card').classList.toggle('flipped')">
+            <div class="card">
+                <div class="card-face">
+                    <small id="flash-no">#1</small>
+                    <h2 id="flash-vocab" style="font-size: 32px;">accept</h2>
+                </div>
+                <div class="card-face card-back">
+                    <h2 id="flash-meaning">ยอมรับ</h2>
+                </div>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn-nav" onclick="changeFlash(-1)">ก่อนหน้า</button>
+            <button class="btn-nav" onclick="changeFlash(1)">ถัดไป</button>
+            <button class="btn-nav" style="grid-column: span 2; background: var(--success);" onclick="randomFlash()">สุ่มคำศัพท์</button>
+        </div>
+        <span class="home-link" onclick="showPage('home')">กลับหน้าหลัก</span>
+    </div>
+
+    <div id="page-choice" class="page">
+        <div class="quiz-box">
+            <div id="choice-q-no" style="font-size: 12px; margin-bottom: 5px;">Question</div>
+            <div class="question" id="choice-vocab">Vocabulary</div>
+            <div class="options-grid" id="choice-options"></div>
+            <div class="feedback" id="choice-feedback"></div>
+            <button class="btn-nav" id="choice-next" style="width: 100%; display: none;" onclick="startQuiz('choice')">ข้อถัดไป</button>
+        </div>
+        <span class="home-link" onclick="showPage('home')">กลับหน้าหลัก</span>
+    </div>
+
+    <div id="page-fill" class="page">
+        <div class="quiz-box">
+            <div class="question" id="fill-vocab">Vocabulary</div>
+            <input type="text" id="fill-input" placeholder="พิมพ์ความหมายภาษาไทยที่นี่..." onkeypress="if(event.key==='Enter') checkFill()">
+            <button class="btn-nav" style="width: 100%; background: var(--success);" onclick="checkFill()">ตรวจคำตอบ</button>
+            <div class="feedback" id="fill-feedback"></div>
+            <button class="btn-nav" id="fill-next" style="width: 100%; display: none;" onclick="startQuiz('fill')">ข้อถัดไป</button>
+        </div>
+        <span class="home-link" onclick="showPage('home')">กลับหน้าหลัก</span>
+    </div>
+</div>
+
+<script>
+        const words = [
+        ["1", "accept", "ยอมรับ"], ["2", "set up", "สร้าง, จัดดัง"], ["3", "review", "ทบทวน"], ["4", "build", "สราง"], ["5", "reply", "ตอบกลับ"], ["6", "plan", "วางแผนงาน"], ["7", "refund", "ขอคืน.."], ["8", "mark off", "ลากเส้นแบ่งเขต"], ["9", "comply", "กระทําตาม ที่กำหนดไว้"], ["10", "ensure", "รับรอง ท่าให้มั่นใจ"],
+        ["11", "amend", "แก้ไข (เอกสาร)"], ["12", "guarantee", "รับประกัน"], ["13", "delay", "ลาชา"], ["14", "check", "ตรวจสอบ"], ["15", "design", "ออกแบบ"], ["16", "support", "ช่วยเหลือ สนับสนุน"], ["17", "approve", "อนุมัติ"], ["18", "provide", "จัดหาให้, เตรียมการ"], ["19", "ban", "ห้าม"], ["20", "sequence", "จัดลำาดับ"],
+        ["21", "order", "สัง"], ["22", "calculate", "คำานวณ"], ["23", "control", "ควบคุม"], ["24", "tap-off", "อุปกรณ์ตัวแยกสัญญาณทีวี"], ["25", "heat detector", "อุปกรณ์ตรวจสอบความร้อน"], ["26", "smoke detector", "อปกรณ์ดักจับควัน"], ["27", "capacitor", "อุปกรณ์ชนิดหนึ่งใช้ในการเก็บสะสมไฟชั่วคราว"], ["28", "interlock", "อุปกรณ์เชื่อมต่อกัน"], ["29", "acknowledge", "รับทราบ"], ["30", "cooling towers", "หอพึ่งเย็น ระบายความร้อน"],
+        ["31", "receive", "รับ, ได้รับ"], ["32", "restroom", "ห้องน่า"], ["33", "request", "ร้องขอ"], ["34", "toilet", "ห้องน่า"], ["35", "handover", "การส่งมอบงาน"], ["36", "confirm", "ยืนยัน"], ["37", "lug", "ห่วงปลายสายไฟฟ้าสำหรับอัดเกลียว"], ["38", "embed", "ฝังลงไป (ในเสา,พื้น)"], ["39", "fluorescent lamp", "หลอดฟลูออเรสเซนด์"], ["40", "announce", "ประกาศ"],
+        ["41", "environment", "สิ่งแวดล้อม"], ["42", "include", "ประกอบด้วย, ส่วนที่นำมารวมคำนวณ"], ["43", "site office", "สํานักงานหน้างาน"], ["44", "perform", "ปฏิบัติการ, ดำาเนินการ"], ["45", "solvent", "สารทําละลาย"], ["46", "photo record", "บันทึกภาพ"], ["47", "lightning arrester", "สายล่อฟ้า"], ["48", "charge", "บรรจุ (ไฟฯ)"], ["49", "variation order (VO)", "สัญญาจ้างงานปรับเพิ่ม-ลด"], ["50", "damage", "ทําให้เสียหาย"],
+        ["51", "contract", "สัญญาจ้างงาน"], ["52", "conform.", "ทําให้เข้ากับ, ทําดาม"], ["53", "neat and clean", "สะอาดและเรียบร้อย"], ["54", "test", "ทดสอบ"], ["55", "switch", "สวิตซ์ไฟ"], ["56", "transfer", "ถ่ายเท โอน"], ["57", "discount", "ส่วนลด"], ["58", "follow up", "ติดตามอย่างใกล้ชิด"], ["59", "cash flow", "สภาพคล่อง ทางการเงิน"], ["60", "signature", "ลายเซ็น"],
+        ["61", "vacation", "ลาพักร้อน"], ["62", "sick leave", "ลาป่วย"], ["63", "courtyard", "ลานที่โล่ง"], ["64", "yard", "ลานโล่ง"], ["65", "crate", "ลังไม้ เพื่อบรรจุสินค้า"], ["66", "recess", "การฝังในพื้นผิว (อย่างเช่น โคมไฟฝังฝ้า)"], ["67", "catalogue", "รูปภาพแสดงรายการสินค้า"], ["68", "utilize", "ใช้เป็นประโยชน์, ทําให้เป็นประโยชน์"], ["69", "type", "รูปแบบ, ชนิด"], ["70", "display", "แสดง, เปิดเผย"],
+        ["71", "detail", "รายละเอียด"], ["72", "exclude", "แยกออกไป (ไม่นำไปรวมเพื่อค่านวณ)"], ["73", "minute of meeting", "รายงานการประชุม"], ["74", "rectify", "งานแก้ไข"], ["75", "staff", "พนักงาน"], ["76", "revise", "ใหม่ ปรับปรุงแก้ไข"], ["77", "dust & noise", "ฝุ่นและเสียงรบกวน"], ["78", "edit", "แก้ไข"], ["79", "shower", "ฝักบัวอาบน้ำ"], ["80", "agree", "เห็นพ้อง"],
+        ["81", "renovation", "ใหม่ ปรับปรุงใหม่ ทำ"], ["82", "connect", "ต่อ เชื่อม"], ["83", "ladder way", "ที่เป็นขั้นบันได ทาง"], ["84", "join", "เชื่อมต่อกัน"], ["85", "catwalk", "เดินที่แคบ ทาง"], ["86", "monitor", "ดู ตรวจสอบ เฝ้า"], ["87", "safety pathway", "เดิน ทาง"], ["88", "report", "รายงาน"], ["89", "entrance", "เข้า ทาง"], ["90", "protection tools", "อุปกรณ์ป้องกัน"],
+        ["91", "skill", "ทักษะ, ความถนัด"], ["92", "lightning flash counter", "อุปกรณ์นับฟ้าผ่า"], ["93", "corridor", "ทางเดิน, ช่องผ่าน, เฉลียง"], ["94", "fixture", "อุปกรณ์ที่ติดตั้งอยู่กับที่"], ["95", "span", "ช่วงห่าง ระหว่างจุดหนึ่งไปจุดหนึ่ง"], ["96", "period", "ช่วงเวลา"], ["97", "insulation", "ฉนวน"], ["98", "destination", "จุดหมายปลายทาง"], ["99", "objective", "จุดประสงค์"], ["100", "thickness", "ความหนา"],
+        ["101", "equipment", "อุปกรณ์ (ชิ้นใหญ่, นับเป็นตัวได้)"], ["102", "ability", "ความสามารถ"], ["103", "device", "อุปกรณ์ (เช่นปลัก สวิทซ์)"], ["104", "depth", "ความลึก"], ["105", "industry", "อุดสาหกรรม"], ["106", "progress", "ความก้าวหน้า"], ["107", "headache", "อาการปวดศรีษะ"], ["108", "adequacy", "ความเพียงพอ"], ["109", "duty stamp", "อากรแสตมป์"], ["110", "interface", "ความเกี่ยวข้องกัน, พื้นที่ร่วมของสองสิ่ง"],
+        ["111", "hazard.", "อันดราย"], ["112", "morale", "ขวัญ กำลังใจ"], ["113", "current", "อัตราการไหลของกระแสไฟ"], ["114", "scale", "ขนาด ระยะ"], ["115", "in-process", "อยู่ในขณะการดำเนินการ"], ["116", "activity", "กิจกรรม"], ["117", "future", "อนาคด"], ["118", "vibration", "การสันไหว"], ["119", "inquiry", "การสอบถามราคา"], ["120", "preservation", "การสงวน, การดูแลรักษา"],
+        ["121", "lamp", "หลอดไฟ"], ["122", "transformer", "หม้อแปลง"], ["123", "safety helmet", "หมวกเซฟตี"], ["124", "facemask", "หน้ากาก"], ["125", "mask", "หน้ากาก"], ["126", "watt", "หน่วยวัดกำาลังไฟฟ้า"], ["127", "ampere", "หน่วยของกระแสไฟฟ้า"], ["128", "footwear", "สิ่งที่ใช้สวมเท้า (รองเท้า, ถุงเท้า)"], ["129", "barrier", "สิ่งกีดขวาง, อุปสรรค"], ["130", "barricade", "สิ่งกีดขวาง"],
+        ["131", "temporary cable", "สายไฟชั่วคราว"], ["132", "wire and termination kit", "สายไฟและอุปกรณ์เข้าหัว"], ["133", "cable", "สายไฟ"], ["134", "fiber optic", "สายใยแก้ว"], ["135", "telephone line", "สายโทรศัพท์"], ["136", "facility", "สาธารณูประโภค, สิ่งอำนวยความสะดวก"], ["137", "utility", "สาธารณูปโภค"], ["138", "logo", "สัญลักษณ์องค์กร"], ["139", "symbol", "สัญลักษณ์"], ["140", "fire alarm", "สัญญาณเตือนไฟไหม้"],
+        ["141", "welfare", "สวัสดิการ"], ["142", "lawn", "สนามหญ้า"], ["143", "architect", "สถาปนิก"], ["144", "substation", "สถานีไฟฟ้าย่อย"], ["145", "status", "สถานะภาพ"], ["146", "storage", "สถานที่เก็บของ"], ["147", "location", "สถานที"], ["148", "site", "สถานที"], ["149", "moral", "ศีลธรรม"], ["150", "working behavior", "วินัยการทํางาน"],
+        ["151", "method", "วิธีการทํางาน"], ["152", "solution", "วิธีแก้ปัญหา, ค่าตอบของวิธีแก้ไข"], ["153", "supporting materials", "วัสดุสำหรับยึดเหนียว/ค้ำยันอุปกรณ์"], ["154", "earthing material", "วัสดุสำหรับต่อลงดิน"], ["155", "material", "วัสดุ/สินค้า"], ["156", "due date", "วันครบกำหนด"], ["157", "client", "ลูกค้า (ประเภทบริการ)"], ["158", "customer", "ลูกค้า"], ["159", "speaker", "ล่าโพง"], ["160", "description", "รายการ, บรรยายความ"],
+        ["161", "raceway", "รางวางสายไฟฟ้า"], ["162", "factory line", "รางไฟฟ้า"], ["163", "import: DDP", "ราคาสินค้า+ค่าใช้จ่ายทั้งหมดจนถึงโรงงานฝั่งผู้ซื้อและรวมภาษีนำเข้า"], ["164", "import: DDU", "ราคาสินค้า+ค่าใช้จ่ายทั้งหมดจนถึงโรงงานฝั่งผู้ซื้อ แต่ไม่รวมภาษีน่าเข้า"], ["165", "import: CIF", "ราคาสินค้า+ค่าใช้จ่ายทั้งหมดจนถึงแต่ Port ฝั่งผู้ซื้อ"], ["166", "illumination", "ระบบส่องสว่าง"], ["167", "sewage treatments system", "ระบบบำาบัดของเสีย"], ["168", "fire protection system", "ระบบดับเพลิง"], ["169", "external & underground work.", "ระบบงานภายนอกและได้ดิน"], ["170", "building automation system (BAS)", "ระบบควบคุมอัตโนมัติ"],
+        ["171", "sound system", "ระบบเสียง"], ["172", "MATV system", "ระบบเสาอากาศทีวีรวม"], ["173", "system", "ระบบ"], ["174", "code", "รหัส"], ["175", "tire", "ยางรถ"], ["176", "Ε.Ι.Τ.", "มาตรฐานวิศวกรรมแห่งประเทศไทย"], ["177", "standard", "มาตรฐาน"], ["178", "withholding tax", "ภาษีหัก ณ ที่จ่าย"], ["179", "VAT", "ภาษีมูลค่าเพิ่ม"], ["180", "emergency", "ภาวะฉุกเฉิน"],
+        ["181", "fuse", "ฟิวส์"], ["182", "surface", "พื้นผิวนอก ด้านหน้า"], ["183", "smoking area", "พื้นที่สำหรับสูบบุหรี"], ["184", "slope", "พื้นที่ลาดเอียง"], ["185", "work area", "พื้นที่ทำงาน"], ["186", "ventilation fans", "พัดลมระบายอากาศ"], ["187", "instructor", "ผู้สอน"], ["188", "sub-contractor", "ผู้รับเหมาช่วง/ผู้รับเหมาย่อย"], ["189", "assistant", "ผู้ช่วย"], ["190", "supplier", "ผู้จัดหาวัตถุดิบ/สินค้า"],
+        ["191", "vendor", "ผู้ขายสินค้า"], ["192", "product", "ผลิตภัณฑ์"], ["193", "analysis", "ผลการวิเคราะห์, การวิเคราะห์"], ["194", "safety warning sign", "ป้ายเดือนด้านความปลอดภัย"], ["195", "plug", "ปลั๊กไฟ"], ["196", "receptacle", "ปลั๊ก"], ["197", "sleeve", "ปลอกหุ้ม, ช่องผ่าน"], ["198", "bushing", "ปลอก"], ["199", "experience", "ประสบการณ์"], ["200", "president", "ประธาน"],
+        ["201", "daily", "ประจําวัน"], ["202", "category", "ประเภท, ลำาดับชั้น"], ["203", "primary", "ปฐมภูมิ"], ["204", "cigarette butts", "บุหรี"], ["205", "manhole", "บ่อพักสายขนาดใหญ่"], ["206", "handhole", "บ่อพักสายขนาดเล็ก"], ["207", "fuel & gasoline", "น้ำมันเชื้อเพลิง"], ["208", "Oxygen", "ธาดออกซิเจน"], ["209", "dormitory", "ที่พักอาศัย(บ้านพัก)"], ["210", "throw out", "ทิ้งไป"],
+        ["211", "duct", "ท่อลม"], ["212", "rod", "ท่อนไม้หรือโลหะ"], ["213", "rigid steel conduit; RSC", "ท่อโลหะหนา"], ["214", "high density polyethylene; HDPE", "ท่อ HDPE"], ["215", "conduit", "ท่อ"], ["216", "pipe", "ท่อ"], ["217", "belonging", "ทรัพย์สินของ... สิ่งของที่มีอยู่"], ["218", "asset", "ทรัพย์สิน"], ["219", "glove", "ถุงมือ"], ["220", "tray", "ถาด, ชั้น"],
+        ["221", "cabinet", "ที่มีลิ้นชัก, ห้องเล็ก"], ["222", "distribution panel board", "ตู้จ่ายไฟฟ้า"], ["223", "locker", "เก็บของ"], ["224", "panel", "ตู้"], ["225", "position", "ด่าแหน่ง"], ["226", "schedule", "ดารางกำหนดเวลา"], ["227", "pre-check", "ตรวจสอบก่อนเริ่มงาน"], ["228", "post-check", "ดรวจทานเมืองานเสร็จ"], ["229", "cost", "ดันทุน"], ["230", "original", "ต้นฉบับ"],
+        ["231", "soil", "ดิน"], ["232", "working cloth", "ชุดทํางาน"], ["233", "amount", "จํานวนเงิน"], ["234", "quantity", "จํานวน"], ["235", "monitor", "จอคอมพิวเดอร์"], ["236", "circulation sheet", "จดหมายเวียน (ภายในองค์กร)"], ["237", "mechanic", "งานระบบเครื่องกล"], ["238", "painting work", "งานทาสี"], ["239", "foundation", "งานฐานราก"], ["240", "civil", "งานโยธา"],
+        ["241", "budget", "งบประมาณ"], ["242", "manual", "คู่มือ"], ["243", "duplicate", "คู่ฉบับ"], ["244", "quality", "คุณภาพ"], ["245", "work instruction", "ค่าสั่ง, ข้อแนะนำในการทางาน"], ["246", "instruction", "สั่ง วิธีใช้งาน คำ"], ["247", "commission", "ค่านายหน้า"], ["248", "compensation", "ค่าชดเชย"], ["249", "wage", "ค่าจ้าง"], ["250", "expense", "ค่าใช้จ่าย"],
+        ["251", "rent", "ค่าเช่า"], ["252", "knowledge", "ความรู้"], ["253", "flexibility", "ความยืดหยุ่น"], ["254", "satisfaction", "ความพึงพอใจ"], ["255", "security", "ความปลอดภัย, ความมั่นคง, ระบบรักษาความปลอดภัย"], ["256", "safety", "ความปลอดภัย"], ["257", "behavior", "ความประพฤติ"], ["258", "reliability", "ความน่าเชื่อถือ"], ["259", "frequency", "ความถี่"], ["260", "requirement", "ความต้องการ"],
+        ["261", "shortage", "ความขาดแคลน"], ["262", "harmonic", "คลื่น ฮาโมนิค"], ["263", "person in charge", "คนรับผิดชอบ"], ["264", "driver", "คนขับรถ"], ["265", "committee", "คณะกรรมการ"], ["266", "output", "ขาออก"], ["267", "loss", "ขาดทุน"], ["268", "input", "ขาเข้า"], ["269", "terminal", "ขั้วปลายสายไฟฟ้า"], ["270", "step-ladder", "ขั้นบันได"],
+        ["271", "procedure", "ขั้นตอนการดำเนินงาน"], ["272", "observance", "ข้อสังเกต"], ["273", "Wood", "ข้อบกพร่อง"], ["274", "elbow", "ข้องอ"], ["275", "specification", "ข้อกำหนด"], ["276", "assessment", "กำาหนด, ประเมิน"], ["277", "torque", "กำาลังบิด"], ["278", "manpower", "กำลังคน"], ["279", "profit", "กำไร"], ["280", "shutdown -work", "การหยุดระบบ...ชั่วคราว เพื่อทํางานสิ่งหนึ่งสิ่งใด"],
+        ["281", "seminar", "การสัมมนา"], ["282", "education", "การศึกษา"], ["283", "measure", "การวัด"], ["284", "resignation", "การลาออก"], ["285", "implement", "การลงมือปฏิบัติ"], ["286", "punishment", "การลงโทษ"], ["287", "leakage", "การรัวไหล"], ["288", "levelling", "การรังวัดหาระดับ"], ["289", "medical treatment", "การรักษาพยาบาล"], ["290", "explosion", "การระเบิด"],
+        ["291", "summary", "การรวมยอด"], ["292", "confirmation", "การยืนยัน"], ["293", "elevation", "การยกให้สูงขึ้น"], ["294", "consideration", "การพิจารณา"], ["295", "corrosion", "การผุกร่อน, การเกิดสนิม"], ["296", "production", "การผลิด"], ["297", "prevention", "การป้องกัน"], ["298", "improvement", "การปรับปรุง"], ["299", "damage liquidation delay", "การปรับเงินค่าความล่าช้าการส่งงาน"], ["300", "estimate", "การประมาณ/ประเมินราคา"],
+        ["301", "safety meeting", "การประชุมเกี่ยวกับความปลอดภัย"], ["302", "meeting", "การประชุม"], ["303", "fabrication", "การประกอบชิ้นงาน"], ["304", "first aid", "การปฐมพยาบาลเบื้องต้น"], ["305", "protection", "การปกป้อง"], ["306", "coordination", "การทำงานประสานกัน"], ["307", "clean-up", "การทําความสะอาด"], ["308", "probation", "การทดลองงานเพื่อดูความสามารถ"], ["309", "tracking", "การติดตาม"], ["310", "installation", "การติดตั้ง"],
+        ["311", "communication", "การติดต่อสื่อสาร"], ["312", "grounding", "การต่อลงดิน"], ["313", "coupling", "การต่อเชื่อมข้อต่อของชิ้นงาน"], ["314", "commissioning", "การตรวจรับและทดสอบ"], ["315", "inspection", "การตรวจตราอย่างละเอียด"], ["316", "patrol", "การตรวจดราลาดตระเวน"], ["317", "maintenance", "การซ่อมบำรุง"], ["318", "indication", "การ บอก"], ["319", "payment", "การชำระเงิน"], ["320", "distribution", "การจําหน่าย, การแจกจ่าย"],
+        ["321", "delivery", "การจัดส่งสินค้า"], ["322", "workplace arrangement", "การจัดระบบสถานที่ท่างาน"], ["323", "handling", "การจัดการ, การควบคุม"], ["324", "arrangement", "การจัดการ"], ["325", "management", "การจัดการ"], ["326", "lighting & Illuminance", "การจัดแสงและระบบสองสว่าง"], ["327", "alignment", "การจัดเป็นเส้นตรง, การวางแนว"], ["328", "selection", "การคัดเลือก"], ["329", "phase-out", "การค่อย ๆ หมดไป"], ["330", "phase-in", "การค่อย ๆ น่าเข้าไปใช้"],
+        ["331", "excavation", "การขุด"], ["332", "expansion", "การขยายออก"], ["333", "transportation", "การขนส่ง"], ["334", "disposal", "การกำจัดทิ้ง"], ["335", "architectural", "การก่อสร้าง, โครงสร้าง"], ["336", "construction", "การก่อสร้าง"], ["337", "rolling", "การกลิ้ง"], ["338", "service", "การให้บริการ"], ["339", "operation", "การใช้เครื่องจักร"], ["340", "usage", "การใช้, ประโยชน์"],
+        ["341", "conversion", "การแปลงหน่วยวัด"], ["342", "safety notification", "การแจ้งดือน, ประกาศด้านความปลอดภัย"], ["343", "solving", "การแก้ปัญหา"], ["344", "removal", "การเอาออกไป, การลบทิ้งไป"], ["345", "quotation", "การเสนอราคา"], ["346", "progress claim", "การเรียกเก็บค่างวดงาน"], ["347", "renewal", "การเริ่มใหม่, การต่อสัญญา"], ["348", "surge", "การเพิ่มขึ้นของกระแสไฟฟ้าอย่างฉับพลัน"], ["349", "wiring", "การเดินสายไฟ"], ["350", "welding", "การเชื่อมต่อ"],
+        ["351", "arc welding", "การเชื่อมโลหะด้วยไฟฟ้า"], ["352", "provident fund", "กองทุนสำรองเลี้ยงชีพ"], ["353", "security fund", "กองทุนประกันสังคม"], ["354", "process", "กระบวนการ"], ["355", "layout", "กรอบ, โครงงาน"], ["356", "managing director", "กรรมการผู้จัดการ"], ["357", "traffic regulation", "กฎจราจร"], ["358", "regulation", "กฎข้อบังคับ"], ["359", "high voltage", "ไฟฟ้าแรงสูง"], ["360", "exit light", "ไฟทางหนีไฟ"],
+        ["361", "street light", "ไฟถนน"], ["362", "emergency light", "ไฟฉุกเฉิน"], ["363", "working permit", "ใบอนุญาตทํางาน"], ["364", "payment voucher", "ใบสำคัญจ่าย"], ["365", "purchase order (P/O)", "ใบสั่งซื้อ"], ["366", "certificate", "ใบรับรอง.."], ["367", "internal request", "ใบค่าขอซื้อ"], ["368", "tax invoice", "ใบกำกับภาษี"], ["369", "invoice", "ใบแจ้งราคาสินค้าที่ขายให้"], ["370", "internal receipt", "ใบเสร็จรับเงินภายในบริษัท"],
+        ["371", "canteen", "โรงอาหาร"], ["372", "factory", "โรงงาน"], ["373", "project", "โครงการ"], ["374", "high bay", "โคมไฟขนาดใหญ่"], ["375", "down light", "โคมไฟขนาดเล็ก"], ["376", "infrared", "แสงอินฟราเรด"], ["377", "temporary light", "แสงสว่างชั่วคราว"], ["378", "glasses", "แว่นตา"], ["379", "voltage", "แรงดันไฟฟ้าที่มีหน่วยเป็นโวลด์"], ["380", "diagram", "แผนภาพ"],
+        ["381", "organization Chart", "แผนผังองค์กร"], ["382", "department", "แผนก"], ["383", "locknut", "แป้นเกลียวที่ใส่ทับเพื่อกันคลาย"], ["384", "site plan", "แบบแปลนที่ตั้งโครงการ"], ["385", "shop drawing", "แบบแปลนซึ่งสามารถน่าไปทํางานติดตั้ง"], ["386", "drawing", "แบบแปลน"], ["387", "as-built drawing", "แบบเหมือนที่สร้างจริง สำหรับส่งมอบงาน"], ["388", "concept", "แนวความคิด"], ["389", "guest", "แขก"], ["390", "document", "เอกสาร"],
+        ["391", "identification", "เอกลักษณ์, การแยกประเภท"], ["392", "steel", "เหล็ก"], ["393", "risk", "เสี่ยงอันตราย, เสียง"], ["394", "pole", "เสา"], ["395", "completion", "เสร็จสมบูรณ์"], ["396", "route", "เส้นทาง"], ["397", "curve", "เส้นโค้ง แนวโค้ง"], ["398", "contour", "เส้นแสดงขอบ"], ["399", "decimal", "เลขทศนิยม"], ["400", "ceiling", "เพดาน"],
+        ["401", "flane", "เปลวไฟ"], ["402", "socket", "เบ้าปลั๊กตัวเมีย"], ["403", "miscellaneous", "เบ็ดเตล็ด"], ["404", "content", "เนื้อหา, สาระ"], ["405", "outlet", "เต้ารับ"], ["406", "safety-rope", "เชือกนิรภัย"], ["407", "rope", "เชือก"], ["408", "owner", "เจ้าของงาน"], ["409", "petty cash", "เงินสดย่อย"], ["410", "deposit", "เงินมัดจํา"],
+        ["411", "suspense money", "เงินทดรองจ่าย"], ["412", "salary", "เงินเดือน"], ["413", "electrical tool", "เครื่องมือสําหรับงานไฟฟ้า"], ["414", "tools", "เครื่องมือ"], ["415", "compressor", "เครื่องบีบอัด (ลม)"], ["416", "machine", "เครื่องจักร"], ["417", "amplifier", "เครื่องขยายเสียง"], ["418", "uniform", "เครื่องแบบพนักงาน"], ["419", "blower", "เครื่องเป่าลม"], ["420", "stationery", "เครื่องเขียนสํานักงาน"],
+        ["421", "overhead crane", "เครนยกสินค้า ที่ลอยอยู่เหนือหัว"], ["422", "strap", "เข็มขัดหนัง, หนังรัด"], ["423", "safetybelt-", "เข็มขัดนิรภัย"], ["424", "obligation", "พันธกรณี"], ["425", "enterprise", "ผู้ประกอบการ"], ["426", "benefit", "ผลประโยชน์"], ["427", "erection insurance", "ประกันภัยก่อสร้าง"], ["428", "deduction work", "งานลด จากสัญญา"], ["429", "commitment", "ค่ามันสัญญา"], ["430", "freight", "ค่าขนส่งทางเรือ/เครื่องบิน"],
+        ["431", "site expense", "ค่าใช้จ่ายทั่วไปของ Site งาน"], ["432", "depreciation", "ค่าเสื่อมราคา"], ["433", "contingency", "ความบังเอิญ สิ่งที่ไม่สามารถคาดการณ์ได้"], ["434", "conclusion", "ข้อสรุป"], ["435", "export", "การส่งสินค้าออกต่างประเทศ"], ["436", "registration", "การลงทะเบียน จดทะเบียน"], ["437", "import", "การนําเข้าจากต่างประเทศ"], ["438", "advertisement", "การโฆษณา"], ["439", "application", "ใบสมัคร.."], ["440", "retention money", "เงินประกันผลงาน"],
+        ["441", "kickback", "เงินทุจริตจากผลกำไรที่แบ่งให้"], ["442", "generator", "เครื่องกำเนิดไฟฟ้าสำรอง"], ["443", "Import: FOB (Free On Board)", "ราคาสินค้า+ค่าใช้จ่ายถึงแค่ Port ฝั่งผู้ขาย"], ["444", "actively", "คล่องแคล่ว, ว่องไว"], ["445", "suitability", "เหมาะสม, สมควร"], ["446", "strictly", "เข้มงวด, เคร่งครัด"], ["447", "downstream", "ตามทิศทางของกระแสน้า ปลายน่า"], ["448", "incoming", "ส่วนที่เข้ามา"], ["449", "indoor", "ภายในอาคาร"], ["450", "inner", "ภายใน, ข้างใน"],
+        ["451", "weekly", "ประจำสัปดาห์"], ["452", "annual", "ประจำปี"], ["453", "monthly", "ประจำเดือน"], ["454", "outdoor", "ที่อยู่กลางแจ้ง"], ["455", "underground.", "ที่อยู่ใต้ดิน"], ["456", "existing", "ที่มีอยู่เดิม"], ["457", "common", "ที่เป็นของส่วนรวม"], ["458", "visible", "ทัศนวิสัย"], ["459", "proper", "ถูกต้อง เหมาะสม"], ["460", "horizontal", "ตามแนวนอน"],
+        ["461", "exposed", "ซึ่งเปิดออก เปิดโล่ง"], ["462", "necessary", "จำจำเป็น, ไม่มีทางอื่น"], ["463", "straight", "โดยตรง"], ["464", "vertical", "แนวตั้ง"], ["465", "cracked", "แตก, เป็นรอยแตก"], ["466", "electrical", "เกี่ยวกับไฟฟ้า"], ["467", "economics", "เกี่ยวกับเศรษฐกิจ"], ["468", "overhead", "ที่อยู่เหนือหัว"]
+    ];
+
+    // ขยายข้อมูลตัวอย่างให้ครบตามลำดับที่คุณเคยส่งมา (ย่อไว้เพื่อประหยัดพื้นที่แสดงผลในแชท)
+    // หมายเหตุ: โค้ดเต็มจะรวมคำศัพท์ 468 คำที่คุณส่งมาก่อนหน้านี้
+    let currentIdx = 0;
+    let quizWord = null;
+
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        if(pageId === 'flash') updateFlash();
+    }
+
+    // Flashcard Logic
+    function updateFlash() {
+        const item = words[currentIdx];
+        document.getElementById('flash-no').innerText = '#' + item[0];
+        document.getElementById('flash-vocab').innerText = item[1];
+        document.getElementById('flash-meaning').innerText = item[2];
+        document.querySelector('.card').classList.remove('flipped');
+    }
+    function changeFlash(dir) { currentIdx = (currentIdx + dir + words.length) % words.length; updateFlash(); }
+    function randomFlash() { currentIdx = Math.floor(Math.random() * words.length); updateFlash(); }
+
+    // Quiz Logic
+    function startQuiz(type) {
+        quizWord = words[Math.floor(Math.random() * words.length)];
+        document.getElementById(type + '-vocab').innerText = quizWord[1];
+        document.getElementById(type + '-feedback').innerText = '';
+        document.getElementById(type + '-next').style.display = 'none';
+
+        if(type === 'choice') {
+            const options = [quizWord[2]];
+            while(options.length < 4) {
+                let randomVal = words[Math.floor(Math.random() * words.length)][2];
+                if(!options.includes(randomVal)) options.push(randomVal);
+            }
+            options.sort(() => Math.random() - 0.5);
+            
+            const container = document.getElementById('choice-options');
+            container.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkChoice(btn, opt);
+                container.appendChild(btn);
+            });
+        } else {
+            const input = document.getElementById('fill-input');
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+        }
+    }
+
+    function checkChoice(btn, selected) {
+        const allBtn = document.querySelectorAll('.option-btn');
+        allBtn.forEach(b => b.style.pointerEvents = 'none');
+        
+        if(selected === quizWord[2]) {
+            btn.classList.add('correct');
+            document.getElementById('choice-feedback').innerText = '✅ ถูกต้อง!';
+        } else {
+            btn.classList.add('wrong');
+            document.getElementById('choice-feedback').innerText = `❌ ผิด! คำตอบคือ: ${quizWord[2]}`;
+        }
+        document.getElementById('choice-next').style.display = 'block';
+    }
+
+    function checkFill() {
+        const input = document.getElementById('fill-input');
+        const userAns = input.value.trim();
+        const correctAns = quizWord[2];
+        
+        if(userAns === "") return;
+        
+        input.disabled = true;
+        if(userAns === correctAns || correctAns.includes(userAns)) {
+            document.getElementById('fill-feedback').style.color = 'var(--success)';
+            document.getElementById('fill-feedback').innerText = '✅ ถูกต้อง! เก่งมาก';
+        } else {
+            document.getElementById('fill-feedback').style.color = 'var(--danger)';
+            document.getElementById('fill-feedback').innerText = `❌ ผิดนิดเดียว! คำตอบคือ: ${correctAns}`;
+        }
+        document.getElementById('fill-next').style.display = 'block';
+    }
+
+    // โหลดคำศัพท์ 1-468 ที่คุณเคยส่งมา (กรุณาใช้ Array ชุด 468 คำที่ผมทำให้ในข้อความก่อนหน้านี้มาวางแทนที่ตรงนี้)
+</script>
+</body>
+</html>
